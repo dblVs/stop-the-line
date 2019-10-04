@@ -1,0 +1,30 @@
+{
+  "name": "stop-the-line",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dblVs/stop-the-line.git"
+  },
+  "author": "VeliV",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dblVs/stop-the-line/issues"
+  },
+  "homepage": "https://github.com/dblVs/stop-the-line#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "typescript": "^3.6.3"
+  },
+  "scripts": {
+    "lint": "tslint -p .",
+    "start": "node ./index.js",
+    "build": "tsc -p .",
+    "deploy": "gcloud app deploy"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.1",
+    "tslint": "^5.20.0"
+  }
+}
