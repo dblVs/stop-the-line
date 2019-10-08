@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "es2016",
-    "module": "commonjs"
+    "module": "commonjs",
+    "types": ["reflect-metadata"],
+    "moduleResolution": "node",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   },
   "include": [
     "*.ts"
