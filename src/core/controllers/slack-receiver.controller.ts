@@ -1,104 +1,107 @@
-import { DocumentSnapshot, Firestore } from '@google-cloud/firestore';
-import { WebClient } from '@slack/web-api';
-import { Request } from 'express';
+import Axios from 'axios';
+import { Request, Response } from 'express';
 import { inject } from 'inversify';
-import { BaseHttpController, controller, httpPost, interfaces, request } from 'inversify-express-utils';
-import { LineIncidentInterface } from '../services/line/intefaces/line-incident.interface';
-import { LineService, LineServiceToken } from '../services/line/line.service';
-import { DBToken } from '../tokens/db.token';
+import { BaseHttpController, controller, httpPost, interfaces, request, response } from 'inversify-express-utils';
+import { AuthenticationMiddleware } from '../middleware/slack/authentication.middleware';
+import { SlackService, SlackServiceToken } from '../services/slack/slack.service';
 
-@controller('/slack')
+@controller('/slack', AuthenticationMiddleware)
 export class SlackReceiverController extends BaseHttpController {
-  private _slackWebClient: Promise<WebClient>;
-
   constructor(
-    @inject(LineServiceToken) private _lineService: LineService,
-    @inject(DBToken) db: Firestore
+    @inject(SlackServiceToken) private _slackService: SlackService
   ) {
     super();
-
-    this._slackWebClient = db.doc('auth/slack').get().then((doc: DocumentSnapshot) => {
-      return new WebClient(doc.data().token);
-    });
   }
 
   @httpPost('/stop')
-  public async stop(
-    @request() { body}: Request
-  ): Promise<interfaces.IHttpActionResult> {
-    const [incident, webClient]: [LineIncidentInterface | string, WebClient] = await Promise.all([
-        this._lineService.reportIncident(body.team_id, body.channel_id, body.user_id, body.text).catch((err: Error) => err.message),
-        this._slackWebClient
-      ]);
+  public stop(
+    @request() { body }: Request,
+    @response() resp: Response
+  ): void {
+    if (body.text) {
+      resp.status(200).send('Alright, request received');
 
-    let botMessage: string;
-
-    if (typeof incident === 'string') {
-      botMessage = incident;
-    } else if (incident.stop) {
-      botMessage = 'Line has been stopped by bob';
+      this._slackService.stop(body.team_id, body.channel_id, body.user_id, body.text).then(() => {
+        return this._removeMessage(body.response_url);
+      }, (error: Error) => {
+        return this._showErrorMessage(body.response_url, error);
+      });
     } else {
-      botMessage = 'Someone is experiencing issues with the line. Please be cautious!';
+      resp.status(200)
+      .send('Oh noes! Reason for stopping the line is missing! Please let us know why you want to stop the line!');
     }
-
-    await Promise.all([
-      webClient.chat.postMessage({
-        channel: body.channel_id,
-        text: botMessage
-      })
-    ]);
-
-    return null;
   }
 
   @httpPost('/resolve')
-  public async resolve(
-    @request() { body }: Request
-  ): Promise<interfaces.IHttpActionResult> {
-    const [incident, webClient]: [LineIncidentInterface | string, WebClient] = await Promise.all([
-      this._lineService.resolveIncident(body.team_id, body.channel_id, body.user_id, body.text).catch((err: Error) => err.message),
-      this._slackWebClient
-    ]);
+  public resolve(
+    @request() { body }: Request,
+    @response() resp: Response
+  ): void {
+    if (body.text) {
+      resp.status(200).send('Alright, request received');
 
-    let botMessage: string;
+      this._slackService.resolveIncident(body.team_id, body.channel_id, body.user_id, body.text).then(() => {
+        return this._removeMessage(body.response_url);
+      }, (error: Error) => {
+        return this._showErrorMessage(body.response_url, error);
+      });
 
-    if (typeof incident === 'string') {
-      botMessage = incident;
-    } else {
-      botMessage = 'Line has been resolved';
+      return;
     }
 
-    await Promise.all([
-      webClient.chat.postMessage({
-        channel: body.channel_id,
-        text: botMessage
-      })
-    ]);
-
-    return null;
+    resp.status(200)
+    .send('Oh noes! Reason for the fix is missing! Please let us know how you fixed the line and try again!');
   }
 
-  @httpPost('/assignExperts')
+  @httpPost('/assign.experts')
   public async assign(
     @request() rawRequest: Request
   ): Promise<interfaces.IHttpActionResult> {
-
-    return null;
+    return this.json({
+      blocks: [
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: 'Pick one or more user to assign them as the duty experts'
+          },
+          accessory: {
+            type: 'multi_users_select',
+            placeholder: {
+              type: 'plain_text',
+              text: 'Select the duty experts',
+              emoji: true
+            }
+          }
+        }
+      ]
+    });
   }
 
-  @httpPost('/status')
-  public async status(
+  @httpPost('/interactions')
+  public interactions(
     @request() rawRequest: Request
-  ): Promise<interfaces.IHttpActionResult> {
+  ): void {
+    const body: { actions: { selected_users: Array<string> }, team: { id: string }, channel: { id: string }, response_url: string } = JSON.parse(rawRequest.body.payload),
+      expertIds: Array<string> = body.actions[0].selected_users;
 
-    return null;
+    this._slackService.setExperts(body.team.id, body.channel.id, expertIds).then(() => {
+      return this._removeMessage(body.response_url);
+    }, (error: Error) => {
+      return this._showErrorMessage(body.response_url, error);
+    });
   }
 
-  @httpPost('/receiver')
-  public async eventReceiver(
-    @request() rawRequest: Request
-  ): Promise<interfaces.IHttpActionResult> {
+  private async _showErrorMessage(responseUrl: string, error?: Error): Promise<void> {
+    await Axios.post(responseUrl, {
+      replace_original: true,
+      text: error ? error.message : 'Whoops there has been an issue with your request!'
+    });
+  }
 
-    return null;
+  private async _removeMessage(responseUrl: string): Promise<void> {
+    await Axios.post(responseUrl, {
+      delete_original: true
+    });
   }
 }

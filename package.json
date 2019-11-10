@@ -14,13 +14,15 @@
   },
   "homepage": "https://github.com/dblVs/stop-the-line#readme",
   "dependencies": {
-    "@google-cloud/firestore": "^2.4.0",
-    "@slack/web-api": "^5.3.0",
+    "@google-cloud/firestore": "^2.6.0",
+    "@slack/web-api": "^5.4.0",
+    "axios": "^0.19.0",
     "express": "^4.17.1",
     "inversify": "^5.0.1",
     "inversify-express-utils": "^6.3.2",
+    "moment": "^2.24.0",
     "reflect-metadata": "^0.1.13",
-    "typescript": "^3.6.3",
+    "typescript": "^3.7.2",
     "uuid": "^3.3.3"
   },
   "scripts": {
@@ -30,7 +32,7 @@
     "deploy": "tsc -p . && tslint -p . && gcloud app deploy"
   },
   "devDependencies": {
-    "@types/express": "^4.17.1",
-    "tslint": "^5.20.0"
+    "@types/express": "^4.17.2",
+    "tslint": "^5.20.1"
   }
 }

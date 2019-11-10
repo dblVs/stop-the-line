@@ -1,1 +1,5 @@
 runtime: nodejs10
+env_variables:
+  SLACK_SIGNING_SECRET: ""
+  SLACK_APP_SECRET: ""
+  SLACK_APP_CLIENT_ID: ""

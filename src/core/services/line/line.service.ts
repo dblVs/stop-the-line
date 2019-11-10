@@ -63,4 +63,12 @@ export class LineService {
 
     throw new Error('the line is currently not stopped');
   }
+
+  public async setExperts(tenantId: string, lineId: string, experts: Array<string>): Promise<void> {
+    await this._lineRepo.setExperts(tenantId, lineId, experts);
+  }
+
+  public async getExperts(tenantId: string, lineId: string): Promise<Array<string>> {
+    return this._lineRepo.getExperts(tenantId, lineId);
+  }
 }
