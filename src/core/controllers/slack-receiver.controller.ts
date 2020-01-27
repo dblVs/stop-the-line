@@ -19,7 +19,7 @@ export class SlackReceiverController extends BaseHttpController {
     @response() resp: Response
   ): void {
     if (body.text) {
-      resp.status(200).send('Alright, request received');
+      resp.status(200).send('Alright, request received!');
 
       this._slackService.stop(body.team_id, body.channel_id, body.user_id, body.text).then(() => {
         return this._removeMessage(body.response_url);
@@ -38,7 +38,7 @@ export class SlackReceiverController extends BaseHttpController {
     @response() resp: Response
   ): void {
     if (body.text) {
-      resp.status(200).send('Alright, request received');
+      resp.status(200).send('Alright, request received!');
 
       this._slackService.resolveIncident(body.team_id, body.channel_id, body.user_id, body.text).then(() => {
         return this._removeMessage(body.response_url);
@@ -50,7 +50,7 @@ export class SlackReceiverController extends BaseHttpController {
     }
 
     resp.status(200)
-    .send('Oh noes! Reason for the fix is missing! Please let us know how you fixed the line and try again!');
+    .send('Oh noes! Reason for the fix is missing! Please let us know what was the cause of the incident and how did you resolve it!');
   }
 
   @httpPost('/assign.experts')
@@ -76,6 +76,16 @@ export class SlackReceiverController extends BaseHttpController {
         }
       ]
     });
+  }
+
+  @httpPost('/show.experts')
+  public async getExperts(
+    @request() { body }: Request,
+    @response() resp: Response
+  ): Promise<void> {
+    resp.status(200).send('Alright, request received!');
+
+    await this._slackService.postExperts(body.team_id, body.channel_id, body.user_id);
   }
 
   @httpPost('/interactions')

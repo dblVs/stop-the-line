@@ -26,7 +26,12 @@ export class LineRepo {
     const experts: {
       experts: Array<string>;
       changed_at: number;
-    } = (await (await this.getLine(tenantId, lineId).collection('experts').orderBy('changed_at', 'desc').limit(1).get()).docs[0]?.ref.get())?.data() as unknown as {
+    } = (await (await this.getLine(tenantId, lineId)
+      .collection('experts')
+      .orderBy('changed_at', 'desc')
+      .limit(1)
+      .get()
+    ).docs[0]?.ref.get())?.data() as unknown as {
       experts: Array<string>;
       changed_at: number;
     };

@@ -46,7 +46,7 @@ export class SlackService {
     await client.chat.postMessage({
       channel,
       text: `The line has been resolved by <@${ userId }>, while the incident lasted for ${ moment.duration(incidentDuration)
-      .humanize() }! Solution to the issue was: \`\`\`${ reason }\`\`\``
+      .humanize() }! Cause of the issue and its solution are: \`\`\`${ reason }\`\`\``
     });
   }
 
@@ -62,6 +62,19 @@ export class SlackService {
       channel,
       text: `Users ${ expertIds.map((userId: string) => `<@${ userId }>`)
       .join(', ') } have been selected as duty experts!`
+    });
+  }
+
+  public async postExperts(team: string, channel: string, requester: string): Promise<void> {
+    const [experts, client]: [Array<string>, WebClient] = await Promise.all([
+      this._lineService.getExperts(team, channel),
+      this._getClient(team)
+    ]);
+
+    await client.chat.postMessage({
+      channel,
+      text: `Showing experts for <@${ requester }>: ${ experts.map((userId: string) => `<@${ userId }>`)
+      .join(', ') }`
     });
   }
 
@@ -91,7 +104,7 @@ export class SlackService {
   private async _contactRespondents(client: WebClient, userId: string, channel: string, reason: string, experts: Array<string>): Promise<void> {
     await client.chat.postMessage({
       channel,
-      text: `<@${ userId }> stopped the line! Contacting the duty experts now`
+      text: `<@${ userId }> stopped the line! Stopping reason: \`\`\`${ reason }\`\`\` Contacting the duty experts now.`
     });
 
     const conversation: { channel: { id: string } } = await client.conversations.open({
